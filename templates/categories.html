@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h1>Categories</h1>
+
+    <form method="post">
+        <h3>Add Category</h3>
+        <label>Name</label>
+        <input type="text" name="name" required>
+        <label>Description</label>
+        <input type="text" name="description">
+        <button type="submit">Add Category</button>
+    </form>
+
+    <table>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Description</th>
+            <th>Created At</th>
+        </tr>
+        {% for category in categories %}
+        <tr>
+            <td>{{ category.id }}</td>
+            <td>{{ category.name }}</td>
+            <td>{{ category.description }}</td>
+            <td>{{ category.created_at }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+{% endblock %}
