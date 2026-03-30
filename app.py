@@ -1,181 +1,97 @@
-import sqlite3
+import sqlite3, os
 from flask import Flask, render_template, request, redirect, url_for, flash
+from datetime import datetime
 
 app = Flask(__name__)
-import os
 app.secret_key = os.environ.get('SECRET_KEY', 'dev_key')
 
-def get_db_connection():
+def get_db():
     conn = sqlite3.connect('inventory.db')
     conn.row_factory = sqlite3.Row
     return conn
 
-from datetime import datetime
-
 @app.route('/')
 def index():
-    conn = get_db_connection()
+    conn = get_db()
     items = conn.execute('SELECT * FROM Item').fetchall()
-    categories = conn.execute('SELECT * FROM Category').fetchall()
-
-    # Calculate Total Inventory Value
-    total_inventory_value = 0
-    item_details = []
-    dead_stock_count = 0
+    total_val, dead_stock, details = 0, 0, []
 
     for item in items:
-        # Get latest purchase price
-        latest_purchase = conn.execute('SELECT purchase_price_per_unit, purchase_date FROM Purchase WHERE item_id = ? ORDER BY purchase_date DESC LIMIT 1', (item['id'],)).fetchone()
-        latest_price = latest_purchase['purchase_price_per_unit'] if latest_purchase else 0
-        total_inventory_value += (item['current_stock'] * latest_price)
-
-        # Get Item_Stats for classification
+        p = conn.execute('SELECT purchase_price_per_unit as price, purchase_date as date FROM Purchase WHERE item_id = ? ORDER BY date DESC LIMIT 1', (item['id'],)).fetchone()
+        price = p['price'] if p else 0
+        total_val += (item['current_stock'] * price)
         stats = conn.execute('SELECT * FROM Item_Stats WHERE item_id = ?', (item['id'],)).fetchone()
 
-        # Classification Logic (Simplified based on README)
-        classification = "Unknown"
-        days_since_purchase = 0
-        if latest_purchase:
-            last_date = datetime.strptime(latest_purchase['purchase_date'], '%Y-%m-%d').date()
-            days_since_purchase = (datetime.now().date() - last_date).days
+        cls, days = "Unknown", 0
+        if p:
+            days = (datetime.now().date() - datetime.strptime(p['date'], '%Y-%m-%d').date()).days
 
         if stats and stats['daily_usage'] > 0:
-            # Need a baseline for "Top 30%" vs "Bottom" as per README, simplifying to a threshold for this example
-            if stats['daily_usage'] > 5:
-                classification = "Fast"
-            elif stats['daily_usage'] < 1:
-                classification = "Slow"
-            else:
-                classification = "Medium"
+            cls = "Fast" if stats['daily_usage'] > 5 else ("Slow" if stats['daily_usage'] < 1 else "Medium")
 
-        # Dead Stock Rule
-        if days_since_purchase > 90 and (not stats or stats['daily_usage'] == 0):
-             classification = "Dead"
-             dead_stock_count += 1
+        if days > 90 and (not stats or stats['daily_usage'] == 0):
+             cls, dead_stock = "Dead", dead_stock + 1
 
-        item_details.append({
-            'name': item['name'],
-            'current_stock': item['current_stock'],
-            'days_since_purchase': days_since_purchase,
-            'classification': classification
-        })
+        details.append({'name': item['name'], 'current_stock': item['current_stock'], 'days_since_purchase': days, 'classification': cls})
 
     conn.close()
-    return render_template('index.html', items=items, categories=categories,
-                           total_inventory_value=total_inventory_value,
-                           dead_stock_count=dead_stock_count,
-                           item_details=item_details)
+    return render_template('index.html', items=items, total_inventory_value=total_val, dead_stock_count=dead_stock, item_details=details)
 
-
-@app.route('/categories', methods=('GET', 'POST'))
+@app.route('/categories', methods=['GET', 'POST'])
 def categories():
-    conn = get_db_connection()
+    conn = get_db()
     if request.method == 'POST':
-        name = request.form['name']
-        description = request.form['description']
-        if not name:
-            flash('Name is required!')
-        else:
-            conn.execute('INSERT INTO Category (name, description) VALUES (?, ?)', (name, description))
+        name, desc = request.form['name'], request.form['description']
+        if name:
+            conn.execute('INSERT INTO Category (name, description) VALUES (?, ?)', (name, desc))
             conn.commit()
             return redirect(url_for('categories'))
-
-    categories = conn.execute('SELECT * FROM Category').fetchall()
+        flash('Name required!')
+    cats = conn.execute('SELECT * FROM Category').fetchall()
     conn.close()
-    return render_template('categories.html', categories=categories)
+    return render_template('categories.html', categories=cats)
 
-@app.route('/items', methods=('GET', 'POST'))
+@app.route('/items', methods=['GET', 'POST'])
 def items():
-    conn = get_db_connection()
+    conn = get_db()
     if request.method == 'POST':
-        name = request.form['name']
-        category_id = request.form['category_id']
-        unit = request.form['unit']
-        current_stock = request.form['current_stock']
-
-        if not name or not category_id:
-            flash('Name and Category are required!')
-        else:
-            conn.execute('INSERT INTO Item (name, category_id, unit, current_stock) VALUES (?, ?, ?, ?)',
-                         (name, category_id, unit, current_stock))
+        n, c, u, s = request.form['name'], request.form['category_id'], request.form['unit'], request.form['current_stock']
+        if n and c:
+            conn.execute('INSERT INTO Item (name, category_id, unit, current_stock) VALUES (?, ?, ?, ?)', (n, c, u, s))
             conn.commit()
             return redirect(url_for('items'))
-
+        flash('Name and Category required!')
     items = conn.execute('SELECT i.*, c.name as category_name FROM Item i LEFT JOIN Category c ON i.category_id = c.id').fetchall()
-    categories = conn.execute('SELECT * FROM Category').fetchall()
+    cats = conn.execute('SELECT * FROM Category').fetchall()
     conn.close()
-    return render_template('items.html', items=items, categories=categories)
+    return render_template('items.html', items=items, categories=cats)
 
-from datetime import datetime
-
-@app.route('/purchases', methods=('GET', 'POST'))
+@app.route('/purchases', methods=['GET', 'POST'])
 def purchases():
-    conn = get_db_connection()
+    conn = get_db()
     if request.method == 'POST':
-        item_id = request.form['item_id']
-        quantity_bought = float(request.form['quantity_bought'])
-        purchase_price_per_unit = float(request.form['purchase_price_per_unit'])
-        total_cost = float(request.form['total_cost'])
-        stock_left_before_purchase = float(request.form['stock_left_before_purchase'])
-        purchase_date = request.form['purchase_date']
+        f = request.form
+        i_id, q, p, c, s, d = f['item_id'], float(f['quantity_bought']), float(f['purchase_price_per_unit']), float(f['total_cost']), float(f['stock_left_before_purchase']), f['purchase_date']
+        if i_id:
+            prev = conn.execute('SELECT * FROM Purchase WHERE item_id = ? ORDER BY purchase_date DESC LIMIT 1', (i_id,)).fetchone()
+            conn.execute('INSERT INTO Purchase (item_id, quantity_bought, purchase_price_per_unit, total_cost, stock_left_before_purchase, purchase_date) VALUES (?, ?, ?, ?, ?, ?)', (i_id, q, p, c, s, d))
+            conn.execute('UPDATE Item SET current_stock = ? WHERE id = ?', (s + q, i_id))
 
-        if not item_id:
-            flash('Item is required!')
-        else:
-            # Query the previous purchase for the same item
-            prev_purchase = conn.execute(
-                'SELECT * FROM Purchase WHERE item_id = ? ORDER BY purchase_date DESC, id DESC LIMIT 1',
-                (item_id,)
-            ).fetchone()
-
-            conn.execute('''INSERT INTO Purchase (item_id, quantity_bought, purchase_price_per_unit, total_cost, stock_left_before_purchase, purchase_date)
-                            VALUES (?, ?, ?, ?, ?, ?)''',
-                         (item_id, quantity_bought, purchase_price_per_unit, total_cost, stock_left_before_purchase, purchase_date))
-
-            # Update current stock
-            conn.execute('UPDATE Item SET current_stock = ? WHERE id = ?',
-                         (stock_left_before_purchase + quantity_bought, item_id))
-
-            # Calculate Consumption and Daily Usage
-            if prev_purchase:
-                prev_qty = prev_purchase['quantity_bought']
-                prev_stock_left = prev_purchase['stock_left_before_purchase']
-                # Actual stock available after previous purchase
-                stock_after_prev_purchase = prev_stock_left + prev_qty
-                consumption = stock_after_prev_purchase - stock_left_before_purchase
-
-                # Calculate Days Between Purchases
-                prev_date = datetime.strptime(prev_purchase['purchase_date'], '%Y-%m-%d').date()
-                curr_date = datetime.strptime(purchase_date, '%Y-%m-%d').date()
-                days_between = (curr_date - prev_date).days
-
-                if days_between > 0:
-                    daily_usage = consumption / days_between
-                else:
-                    daily_usage = 0
-            else:
-                consumption = 0
-                daily_usage = 0
-
-            # Write to Item_Stats table
-            if prev_purchase and daily_usage > 0:
-                monthly_demand = daily_usage * 30
-                # Check if item stats exists
-                stats = conn.execute('SELECT * FROM Item_Stats WHERE item_id = ?', (item_id,)).fetchone()
-                if stats:
-                    conn.execute('UPDATE Item_Stats SET daily_usage = ?, monthly_demand = ?, last_updated = CURRENT_TIMESTAMP WHERE item_id = ?',
-                                 (daily_usage, monthly_demand, item_id))
-                else:
-                    conn.execute('INSERT INTO Item_Stats (item_id, daily_usage, monthly_demand, last_updated) VALUES (?, ?, ?, CURRENT_TIMESTAMP)',
-                                 (item_id, daily_usage, monthly_demand))
-
+            if prev:
+                days = (datetime.strptime(d, '%Y-%m-%d').date() - datetime.strptime(prev['purchase_date'], '%Y-%m-%d').date()).days
+                daily = (prev['stock_left_before_purchase'] + prev['quantity_bought'] - s) / days if days > 0 else 0
+                if daily > 0:
+                    st = conn.execute('SELECT * FROM Item_Stats WHERE item_id = ?', (i_id,)).fetchone()
+                    if st: conn.execute('UPDATE Item_Stats SET daily_usage=?, monthly_demand=?, last_updated=CURRENT_TIMESTAMP WHERE item_id=?', (daily, daily*30, i_id))
+                    else: conn.execute('INSERT INTO Item_Stats (item_id, daily_usage, monthly_demand, last_updated) VALUES (?, ?, ?, CURRENT_TIMESTAMP)', (i_id, daily, daily*30))
             conn.commit()
             return redirect(url_for('purchases'))
+        flash('Item required!')
 
-    purchases = conn.execute('SELECT p.*, i.name as item_name FROM Purchase p LEFT JOIN Item i ON p.item_id = i.id').fetchall()
-    items = conn.execute('SELECT * FROM Item').fetchall()
+    ps = conn.execute('SELECT p.*, i.name as item_name FROM Purchase p LEFT JOIN Item i ON p.item_id = i.id').fetchall()
+    its = conn.execute('SELECT * FROM Item').fetchall()
     conn.close()
-    return render_template('purchases.html', purchases=purchases, items=items)
+    return render_template('purchases.html', purchases=ps, items=its)
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

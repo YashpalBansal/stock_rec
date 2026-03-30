@@ -1,8 +1,7 @@
 {% extends 'base.html' %}
 
 {% block content %}
-    <h1>Smart Inventory & Demand Forecasting System</h1>
-    <p>Welcome to the dashboard.</p>
+    <h1>Smart Inventory Dashboard</h1>
 
     <h2>Quick Stats</h2>
     <p>Total Inventory Value: ₹{{ total_inventory_value }}</p>
@@ -11,19 +10,23 @@
 
     <h2>Item Classifications</h2>
     <table>
-        <tr>
-            <th>Item</th>
-            <th>Stock</th>
-            <th>Days Since Last Purchase</th>
-            <th>Type</th>
-        </tr>
-        {% for item in item_details %}
-        <tr>
-            <td>{{ item.name }}</td>
-            <td>{{ item.current_stock }}</td>
-            <td>{{ item.days_since_purchase }}</td>
-            <td>{{ item.classification }}</td>
-        </tr>
-        {% endfor %}
+        <thead>
+            <tr>
+                <th>Item</th>
+                <th>Stock</th>
+                <th>Days Since Purchase</th>
+                <th>Type</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in item_details %}
+            <tr>
+                <td>{{ item.name }}</td>
+                <td>{{ item.current_stock }}</td>
+                <td>{{ item.days_since_purchase }}</td>
+                <td>{{ item.classification }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
     </table>
 {% endblock %}

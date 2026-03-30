@@ -1,0 +1,92 @@
+/* Minimalist Design */
+:root {
+  --bg: #fafafa;
+  --text: #333;
+  --accent: #000;
+  --border: #eaeaea;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+  max-width: 800px;
+  margin: 40px auto;
+  padding: 0 20px;
+  line-height: 1.6;
+}
+nav {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 15px;
+}
+nav a {
+  text-decoration: none;
+  color: var(--text);
+  font-weight: 500;
+}
+nav a:hover {
+  color: var(--accent);
+}
+h1, h2, h3 {
+  font-weight: 600;
+  margin-bottom: 15px;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  margin-bottom: 40px;
+}
+th, td {
+  border-bottom: 1px solid var(--border);
+  padding: 12px 8px;
+  text-align: left;
+}
+th {
+  font-weight: 600;
+  color: #666;
+}
+form {
+  margin-top: 30px;
+  margin-bottom: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  max-width: 400px;
+}
+label {
+  font-weight: 500;
+  margin-bottom: -5px;
+}
+input, select {
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: inherit;
+}
+button {
+  padding: 10px 15px;
+  background-color: var(--text);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+}
+button:hover {
+  background-color: var(--accent);
+}
+.flash {
+  color: #d93025;
+  background: #fce8e6;
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  list-style: none;
+}
+.flashes {
+  padding: 0;
+  margin: 0 0 20px 0;
+}

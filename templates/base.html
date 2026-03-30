@@ -1,20 +1,10 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Inventory System</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        nav { margin-bottom: 20px; }
-        nav a { margin-right: 15px; text-decoration: none; color: blue; }
-        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; }
-        form { margin-top: 20px; padding: 15px; border: 1px solid #ccc; background: #f9f9f9; }
-        input, select, button { margin-bottom: 10px; padding: 8px; width: 100%; box-sizing: border-box; }
-        button { background-color: #4CAF50; color: white; border: none; cursor: pointer; }
-        button:hover { background-color: #45a049; }
-        .flash { color: red; margin-bottom: 10px; }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <nav>
@@ -26,7 +16,7 @@
 
     {% with messages = get_flashed_messages() %}
       {% if messages %}
-        <ul class=flashes>
+        <ul class="flashes">
         {% for message in messages %}
           <li class="flash">{{ message }}</li>
         {% endfor %}
@@ -34,6 +24,9 @@
       {% endif %}
     {% endwith %}
 
-    {% block content %}{% endblock %}
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
