@@ -1,49 +1,74 @@
 {% extends 'base.html' %}
 
 {% block content %}
-    <h1>Purchases</h1>
+    <div class="flex-header">
+        <h1>Purchases</h1>
+    </div>
 
-    <form method="post">
-        <h3>Add Purchase</h3>
-        <label>Item</label>
-        <select name="item_id" required>
-            {% for item in items %}
-            <option value="{{ item.id }}">{{ item.name }}</option>
-            {% endfor %}
-        </select>
-        <label>Quantity Bought</label>
-        <input type="number" step="0.01" name="quantity_bought" required>
-        <label>Purchase Price Per Unit</label>
-        <input type="number" step="0.01" name="purchase_price_per_unit" required>
-        <label>Total Cost</label>
-        <input type="number" step="0.01" name="total_cost" required>
-        <label>Stock Left Before Purchase</label>
-        <input type="number" step="0.01" name="stock_left_before_purchase" required>
-        <label>Purchase Date</label>
-        <input type="date" name="purchase_date" required>
-        <button type="submit">Add Purchase</button>
-    </form>
+    <section class="content-section">
+        <h2>Add Purchase</h2>
+        <form method="post">
+            <div class="form-group">
+                <label>Item</label>
+                <select name="item_id" required>
+                    {% for item in items %}
+                    <option value="{{ item.id }}">{{ item.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Quantity Bought</label>
+                <input type="number" step="0.01" name="quantity_bought" required>
+            </div>
+            <div class="form-group">
+                <label>Purchase Price Per Unit</label>
+                <input type="number" step="0.01" name="purchase_price_per_unit" required>
+            </div>
+            <div class="form-group">
+                <label>Total Cost</label>
+                <input type="number" step="0.01" name="total_cost" required>
+            </div>
+            <div class="form-group">
+                <label>Stock Left Before Purchase</label>
+                <input type="number" step="0.01" name="stock_left_before_purchase" required>
+            </div>
+            <div class="form-group">
+                <label>Purchase Date</label>
+                <input type="date" name="purchase_date" required>
+            </div>
+            <button type="submit" class="btn">Add Purchase</button>
+        </form>
+    </section>
 
-    <table>
-        <tr>
-            <th>ID</th>
-            <th>Item</th>
-            <th>Quantity Bought</th>
-            <th>Price Per Unit</th>
-            <th>Total Cost</th>
-            <th>Stock Before</th>
-            <th>Purchase Date</th>
-        </tr>
-        {% for purchase in purchases %}
-        <tr>
-            <td>{{ purchase.id }}</td>
-            <td>{{ purchase.item_name }}</td>
-            <td>{{ purchase.quantity_bought }}</td>
-            <td>{{ purchase.purchase_price_per_unit }}</td>
-            <td>{{ purchase.total_cost }}</td>
-            <td>{{ purchase.stock_left_before_purchase }}</td>
-            <td>{{ purchase.purchase_date }}</td>
-        </tr>
-        {% endfor %}
-    </table>
+    <section class="content-section">
+        <h2>All Purchases</h2>
+        <div class="overflow-auto">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Item</th>
+                        <th>Qty Bought</th>
+                        <th>Price/Unit</th>
+                        <th>Total Cost</th>
+                        <th>Stock Before</th>
+                        <th>Purchase Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for purchase in purchases %}
+                    <tr>
+                        <td>{{ purchase.id }}</td>
+                        <td>{{ purchase.item_name }}</td>
+                        <td>{{ purchase.quantity_bought }}</td>
+                        <td>₹{{ purchase.purchase_price_per_unit }}</td>
+                        <td>₹{{ purchase.total_cost }}</td>
+                        <td>{{ purchase.stock_left_before_purchase }}</td>
+                        <td>{{ purchase.purchase_date }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
 {% endblock %}
